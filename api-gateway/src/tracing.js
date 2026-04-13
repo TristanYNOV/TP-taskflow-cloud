@@ -1,5 +1,5 @@
 const { NodeSDK } = require("@opentelemetry/sdk-node");
-const { resourceFromAttributes } = require("@opentelemetry/resources");
+const { Resource } = require("@opentelemetry/resources");
 const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
@@ -11,7 +11,7 @@ const traceEndpoint =
   process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || `${otlpBaseUrl}/v1/traces`;
 
 const sdk = new NodeSDK({
-  resource: resourceFromAttributes({
+  resource: new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
   }),
   traceExporter: new OTLPTraceExporter({ url: traceEndpoint }),
@@ -28,14 +28,10 @@ const sdk = new NodeSDK({
 
 sdk.start();
 
-process.on("SIGTERM", () => {
-  sdk
-    .shutdown()
-    .finally(() => process.exit(0));
-});
+const shutdown = () =>
+  sdk.shutdown().finally(() => {
+    process.exit(0);
+  });
 
-process.on("SIGINT", () => {
-  sdk
-    .shutdown()
-    .finally(() => process.exit(0));
-});
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
