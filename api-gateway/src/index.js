@@ -16,6 +16,8 @@ const TASK_SERVICE_URL =
 const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3003";
 
+const ERROR_CODE = 500;
+
 app.use(
   pinoHttp({
     logger,
