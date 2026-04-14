@@ -1,15 +1,16 @@
 # REPORT — TaskFlow TP5 Observabilité
 
-> Ce document suit la grille d’évaluation : compréhension théorique, implémentation, preuves d’observation, interprétation, justification des choix et démarche d’investigation.
-
----
-
 ## 1. Fonctionnement global du projet
 
 ### 1.1 État de la stack
 
 La stack d’observabilité est opérationnelle avec les composants suivants : OTel Collector, Tempo, Prometheus, Loki, Promtail, Grafana. Les données de métriques, logs et traces sont consultables depuis Grafana (datasources provisionnées automatiquement).
 
+  A quoi sert chaque stack : 
+- Prometheus --> Dessert la quantité d'information, offre une multitiude de données sur la vie de l'application
+- Loki && promTail --> Agit comme journal en ligne de la vie de l'application. Il offre une visibilité sur les détails d'une erreur ou/et les actions réalisées dans le docker (lus par PromTail)
+- Tempo --> Offre une vue qualitative sur les requêtes faites durant la vie de l'application, temps par étape, là où ca coince, ...
+- Otel Collector --> Sert à connecter n'importe quel service métrique à une application grâce à 3 blocs; receiver (reçoit la donnée), processor (transforme la donnée) et exporter (export vers la bonne destination)
 ### 1.2 Reproductibilité
 
 Le lancement repose sur deux commandes :
@@ -17,6 +18,13 @@ Le lancement repose sur deux commandes :
 ```bash
 docker compose -f docker-compose.infra.yml up -d
 docker compose up --build
+```
+
+ou 
+
+```bash
+npm run dev:infra
+npm run dev
 ```
 
 L’ordre est important pour éviter un démarrage applicatif avant disponibilité de l’infra d’observabilité.
@@ -46,8 +54,8 @@ Sur un `POST /api/tasks`, la chaîne de spans attendue est :
 
 Un span manuel a été ajouté autour de la publication Redis dans `task-service` :
 
-- `publish.task.created` (obligatoire TP)
-- `publish.task.status_changed` (ajout cohérent pour homogénéité des événements sortants)
+- `publish.task.created`
+- `publish.task.status_changed`
 
 Points d’implémentation :
 
@@ -237,14 +245,9 @@ Interprétation : contrôle du flux de changement d’état.
 ---
 
 ## 9. Captures d’écran à insérer (section explicite)
-
-> À compléter avec captures réelles dans le rendu final.
-
-- [ ] **Capture 1** — Dashboard services-overview (débit + erreurs + latence)
-- [ ] **Capture 2** — Dashboard business (tasks_created_total / tasks_gauge)
-- [ ] **Capture 3** — Explore Loki filtré `level="error"`
-- [ ] **Capture 4** — Trace distribuée `POST /api/tasks` avec span `publish.task.created`
-- [ ] **Capture 5** — Corrélation log (`trace_id`) -> trace Tempo
+Tous les screens faits sont retrouvables dans le dossier /screens par section réalisée.
+ Section actuelle: 
+- /Part-1-StartMonitoring
 
 ---
 
