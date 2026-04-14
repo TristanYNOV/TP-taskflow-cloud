@@ -1,14 +1,43 @@
 require("./tracing");
-const { register } = require("./metrics");
+const { register, httpRequestsTotal, httpRequestDurationMs } = require("./metrics");
 const express = require("express");
 const pino = require("pino");
 const pinoHttp = require("pino-http");
-const routes = require("./routes");
+const { router: routes, refreshTasksGaugeFromDb } = require("./routes");
 
 const ERROR_CODE = 500;
 
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 const app = express();
+
+function getRouteLabel(req) {
+  if (req.route?.path) {
+    return `${req.baseUrl || ""}${req.route.path}`;
+  }
+  return req.baseUrl || req.path || "unknown_route";
+}
+
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  res.on("finish", () => {
+    const route = getRouteLabel(req);
+    const labels = {
+      method: req.method,
+      route,
+      status: String(res.statusCode),
+    };
+
+    httpRequestsTotal.labels(labels.method, labels.route, labels.status).inc();
+
+    const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+    httpRequestDurationMs
+      .labels(labels.method, labels.route, labels.status)
+      .observe(durationMs);
+  });
+
+  next();
+});
 
 app.use(express.json());
 app.use(
@@ -38,6 +67,12 @@ app.get("/metrics", async (req, res) => {
 app.use("/tasks", routes);
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    await refreshTasksGaugeFromDb();
+  } catch (err) {
+    logger.warn({ err }, "tasks gauge initialization failed");
+  }
+
   logger.info({ port: PORT }, "task-service started");
 });
