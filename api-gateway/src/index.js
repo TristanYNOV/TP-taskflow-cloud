@@ -1,5 +1,10 @@
 require("./tracing");
-const { register, upstreamErrorsTotal } = require("./metrics");
+const {
+  register,
+  httpRequestsTotal,
+  httpRequestDurationMs,
+  upstreamErrorsTotal,
+} = require("./metrics");
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const pino = require("pino");
@@ -17,6 +22,35 @@ const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3003";
 
 const ERROR_CODE = 500;
+
+function getRouteLabel(req) {
+  if (req.route?.path) {
+    return `${req.baseUrl || ""}${req.route.path}`;
+  }
+  return req.baseUrl || req.path || "unknown_route";
+}
+
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  res.on("finish", () => {
+    const route = getRouteLabel(req);
+    const labels = {
+      method: req.method,
+      route,
+      status: String(res.statusCode),
+    };
+
+    httpRequestsTotal.labels(labels.method, labels.route, labels.status).inc();
+
+    const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+    httpRequestDurationMs
+      .labels(labels.method, labels.route, labels.status)
+      .observe(durationMs);
+  });
+
+  next();
+});
 
 function createUpstreamProxy(serviceName, target, rewritePrefix, rewriteTo) {
   return createProxyMiddleware({
