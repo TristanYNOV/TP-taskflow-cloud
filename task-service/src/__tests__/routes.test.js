@@ -12,7 +12,7 @@ vi.mock('../publisher.js', () => ({
 
 import db from '../db.js'
 import { publish } from '../publisher.js'
-import routes from '../routes.js'
+import { router as routes } from '../routes.js'
 
 const app = express()
 app.use(express.json())

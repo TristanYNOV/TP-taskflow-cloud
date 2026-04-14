@@ -3,7 +3,7 @@ const { register } = require("./metrics");
 const express = require("express");
 const pino = require("pino");
 const pinoHttp = require("pino-http");
-const routes = require("./routes");
+const { router: routes, refreshTasksGaugeFromDb } = require("./routes");
 
 const ERROR_CODE = 500;
 
@@ -38,6 +38,12 @@ app.get("/metrics", async (req, res) => {
 app.use("/tasks", routes);
 
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    await refreshTasksGaugeFromDb();
+  } catch (err) {
+    logger.warn({ err }, "tasks gauge initialization failed");
+  }
+
   logger.info({ port: PORT }, "task-service started");
 });

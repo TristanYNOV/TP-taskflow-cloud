@@ -1,8 +1,27 @@
 const express = require("express");
 const db = require("./db");
 const { publish } = require("./publisher");
+const {
+  tasksCreatedTotal,
+  tasksStatusChangesTotal,
+  tasksGauge,
+} = require("./metrics");
 
 const router = express.Router();
+const TASK_STATUSES = ["todo", "in_progress", "done"];
+
+async function refreshTasksGaugeFromDb() {
+  // Robust strategy: recompute from DB state to avoid drift caused by retries or failures.
+  const result = await db.query(
+    "SELECT status, COUNT(*)::int AS count FROM tasks GROUP BY status",
+  );
+
+  const countsByStatus = new Map(result.rows.map((row) => [row.status, row.count]));
+
+  for (const status of TASK_STATUSES) {
+    tasksGauge.labels(status).set(countsByStatus.get(status) || 0);
+  }
+}
 
 // GET /tasks
 router.get("/", async (req, res) => {
@@ -26,7 +45,7 @@ router.get("/", async (req, res) => {
     }
     if (conditions.length) query += " WHERE " + conditions.join(" AND ");
     query += " ORDER BY created_at DESC";
-    
+
     const result = await db.query(query, params);
     res.json(result.rows);
   } catch (err) {
@@ -67,6 +86,9 @@ router.post("/", async (req, res) => {
       ],
     );
     const task = result.rows[0];
+
+    tasksCreatedTotal.labels(task.priority).inc();
+    await refreshTasksGaugeFromDb();
 
     await publish("task.created", {
       taskId: task.id,
@@ -113,15 +135,20 @@ router.patch("/:id", async (req, res) => {
     );
     const task = result.rows[0];
 
-    if (status && status !== current.rows[0].status) {
+    if (task.status !== current.rows[0].status) {
+      tasksStatusChangesTotal
+        .labels(current.rows[0].status, task.status)
+        .inc();
+
       await publish("task.status_changed", {
         taskId: task.id,
         oldStatus: current.rows[0].status,
-        newStatus: status,
+        newStatus: task.status,
         assigneeId: task.assignee_id,
       });
     }
 
+    await refreshTasksGaugeFromDb();
     res.json(task);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -137,10 +164,12 @@ router.delete("/:id", async (req, res) => {
     );
     if (!result.rows[0])
       return res.status(404).json({ error: "Task not found" });
+
+    await refreshTasksGaugeFromDb();
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-module.exports = router;
+module.exports = { router, refreshTasksGaugeFromDb };
