@@ -1,13 +1,26 @@
 require("./tracing");
 const { register, httpRequestsTotal, httpRequestDurationMs } = require("./metrics");
 const express = require("express");
+const { context, trace } = require("@opentelemetry/api");
 const pino = require("pino");
 const pinoHttp = require("pino-http");
 const { router: routes, refreshTasksGaugeFromDb } = require("./routes");
 
 const ERROR_CODE = 500;
 
-const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+const logger = pino({
+  level: process.env.LOG_LEVEL || "info",
+  mixin() {
+    const activeSpan = trace.getSpan(context.active());
+    if (!activeSpan) return {};
+
+    const spanContext = activeSpan.spanContext();
+    return {
+      trace_id: spanContext.traceId,
+      span_id: spanContext.spanId,
+    };
+  },
+});
 const app = express();
 
 function getRouteLabel(req) {

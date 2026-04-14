@@ -1,4 +1,5 @@
 const express = require("express");
+const { SpanStatusCode, trace } = require("@opentelemetry/api");
 const db = require("./db");
 const { publish } = require("./publisher");
 const {
@@ -8,6 +9,7 @@ const {
 } = require("./metrics");
 
 const router = express.Router();
+const tracer = trace.getTracer("task-service");
 const TASK_STATUSES = ["todo", "in_progress", "done"];
 
 async function refreshTasksGaugeFromDb() {
@@ -90,11 +92,24 @@ router.post("/", async (req, res) => {
     tasksCreatedTotal.labels(task.priority).inc();
     await refreshTasksGaugeFromDb();
 
-    await publish("task.created", {
-      taskId: task.id,
-      title: task.title,
-      assigneeId: task.assignee_id,
-    });
+    const publishCreatedSpan = tracer.startSpan("publish.task.created");
+    try {
+      await publish("task.created", {
+        taskId: task.id,
+        title: task.title,
+        assigneeId: task.assignee_id,
+      });
+      publishCreatedSpan.setStatus({ code: SpanStatusCode.OK });
+    } catch (error) {
+      publishCreatedSpan.recordException(error);
+      publishCreatedSpan.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error.message,
+      });
+      throw error;
+    } finally {
+      publishCreatedSpan.end();
+    }
 
     res.status(201).json(task);
   } catch (err) {
@@ -140,12 +155,27 @@ router.patch("/:id", async (req, res) => {
         .labels(current.rows[0].status, task.status)
         .inc();
 
-      await publish("task.status_changed", {
-        taskId: task.id,
-        oldStatus: current.rows[0].status,
-        newStatus: task.status,
-        assigneeId: task.assignee_id,
-      });
+      const publishStatusChangedSpan = tracer.startSpan(
+        "publish.task.status_changed",
+      );
+      try {
+        await publish("task.status_changed", {
+          taskId: task.id,
+          oldStatus: current.rows[0].status,
+          newStatus: task.status,
+          assigneeId: task.assignee_id,
+        });
+        publishStatusChangedSpan.setStatus({ code: SpanStatusCode.OK });
+      } catch (error) {
+        publishStatusChangedSpan.recordException(error);
+        publishStatusChangedSpan.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: error.message,
+        });
+        throw error;
+      } finally {
+        publishStatusChangedSpan.end();
+      }
     }
 
     await refreshTasksGaugeFromDb();
