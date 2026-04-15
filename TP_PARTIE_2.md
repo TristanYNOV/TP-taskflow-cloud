@@ -31,7 +31,11 @@ k6 run -e TOKEN=<votre_token> scripts/load-test.js
 
 > **Question 1** — Quelle est la latence p95 affichée par k6 pendant ce test léger ? Est-elle dans les seuils acceptables (< 200ms) ?
 
+Le p95 de l'api-gateway est de 85ms maximum alors que celle du task-service est inférieur à 25ms. Ces chiffres sont largements acceptables pour le moment.
+
 > **Question 2** — Le taux `http_req_failed` est-il à 0 % ? Si non, quel code d'erreur observez-vous ?
+
+Je n'ai aucune erreur.
 
 ---
 
@@ -46,11 +50,17 @@ k6 run -e EMAIL=<email> -e PASSWORD=<password> scripts/load-test-realistic.js
 Relancez et observez **Grafana** + **terminal k6** en continu.
 
 > **Question 3** — Dans le résumé k6, observez les lignes `checks_failed` et `http_req_duration`. À partir de quel stade (combien de VUs) le check `tasks response < 500ms` commence-t-il à échouer massivement ? Quelle est la p95 finale ?
-> Ne pas hésiter à faire varier les options du scénario pour répondre complètement à la question.
+
+Ne pas hésiter à faire varier les options du scénario pour répondre complètement à la question.
+Sur mon pauvre MAC de 10ans, à partir de 50 VUs je suis déjà KO avec 69% de réussite sur les task responses (en dessous de500ms pour répondre) et 99% de réussite pour les responses-notifs (moins de 500ms).
 
 > **Question 4** — Dans Grafana, observez le panel **Request Rate per Service** au pic de charge. L'`api-gateway` reçoit environ 2× plus de trafic que le `task-service` et 4× plus que le `user-service`. Expliquez pourquoi en vous appuyant sur le script de test : combien de requêtes par service sont émises à chaque itération ?
 
+L'api recoit naturellement plus de requête car c'est elle qui effectue le routing vers chacun des services. 
+
 > **Question 5** — Pourquoi le `task-service` est-il plus impacté que le `user-service` ou le `notification-service` sous forte charge ?
+
+L'utilisateur utilise 2 requetes lorsqu'il créé un task, d'abord un get pour récupérer la liste des task puis le post pour créer la task.
 
 ---
 
@@ -64,6 +74,8 @@ docker compose up --scale task-service=3
 
 > **Question 6** — Que se passe-t-il ? Quelle erreur obtenez-vous et pourquoi ? Identifiez dans le `docker-compose.yml` la ligne responsable.
 
+Aucune car j'ai déjà refait le mapping des ports en retirant le port du docker-compose.
+
 **Manipulation 2** — Contourner cette erreur en modifiant `docker-compose.yml`, puis relancez :
 
 ```bash
@@ -74,7 +86,11 @@ Relancez ensuite le test k6 et observez Grafana.
 
 > **Question 7** — Le scaling a-t-il amélioré les métriques ? Dans Grafana, les 3 replicas reçoivent-ils du trafic ? Mêmes questions depuis l'interface Prometheus sur http://localhost:9090/targets. Combien de targets `task-service` voyez-vous malgré les 3 replicas ? Expliquez pourquoi Prometheus ne peut pas surveiller les 3 instances individuellement avec cette configuration ?
 
+Le scaling n'a apporté aucune amélioration, au contraire, car il n'y a aucune gestion des requêtes (load balancing inexsitant)
+
 > **Question 8** — Pourquoi `docker scale` ne suffit pas pour un scaling propre en production ? Qu'est-ce qu'un orchestrateur comme Kubernetes apporterait pour résoudre les problèmes que vous avez rencontrés ?
+
+Docker n'apporte aucun load balancing, toutes les requêtes continuent donc de cibler le même service jusqu'à le surcharger. Même en cas d'erreur, le service KO continue d'être appelé. Kubernetes pourrait mettre en place une gestion de la charge des requêtes.
 
 ---
 
@@ -82,11 +98,14 @@ Relancez ensuite le test k6 et observez Grafana.
 
 > **Question 9** — Le panel *Error Rate 5xx* affiche "No data" alors que k6 signale des erreurs. Le serveur retourne-t-il des erreurs HTTP ? Peut-on utiliser ce panel pour détecter une dégradation de performance ?
 
+  k6 peut signaler des erreurs alors que le serveur ne retourne aucun code HTTP 5xx. 
+Sous forte charge, une partie des échecs peut venir de timeouts, de connexions refusées ou de checks non respectés côté client.
+Dans ce cas, le panel Error Rate 5xx reste vide car il ne mesure que les réponses HTTP 5xx réellement renvoyées par les services.
+On ne peut donc pas utiliser ce panel seul pour détecter une dégradation globale de performance. 
+
 > **Question 10** — Le panel *Latency p50/p95/p99* reste flat pendant tout le test, alors que k6 mesure une p95 qui ne correcpond pas à ce que montre Grafana. D'où vient cet écart ? Qu'est-ce que ce panel mesure réellement, et qu'est-ce qu'il ne mesure pas ? Que faudrait-il faire pour rectifier ça ?
 
+  L’écart vient du fait que Grafana mesure ici la latence interne au service, c’est-à-dire uniquement le temps de traitement une fois la requête acceptée par l’application. k6, lui, mesure la latence end-to-end côté client, en incluant l’attente réseau, la mise en file, les ralentissements de la gateway et les éventuels refus de connexion. 
+Le panel Grafana ne mesure donc ni la congestion réseau, ni les délais avant acceptation TCP, ni les erreurs de connexion.
+Pour rectifier cela, il faudrait exposer des métriques plus complètes ou intégrer les métriques k6 dans Grafana/Prometheus afin de visualiser aussi la latence réellement perçue côté client.
 ---
-
-## Livrable
-
-Complétez votre document `REPORT.md` avec vos réponses aux 10 questions.
-Inclure des captures d'écran Grafana (panel Request Rate) pour les questions 4 et 5, et le résumé terminal k6 pour les questions 3 et 6.
