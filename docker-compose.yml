@@ -38,8 +38,6 @@ services:
 
   task-service:
     build: task-service
-    ports:
-      - "3002:3002"
     env_file:
       .env
     environment:
