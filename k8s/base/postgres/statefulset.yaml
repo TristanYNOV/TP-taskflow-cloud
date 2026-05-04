@@ -57,6 +57,13 @@ spec:
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+            - name: postgres-init-sql
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+      volumes:
+        - name: postgres-init-sql
+          configMap:
+            name: postgres-init-sql
   volumeClaimTemplates:
     - metadata:
         name: postgres-data
