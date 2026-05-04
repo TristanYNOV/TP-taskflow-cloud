@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-init
+  namespace: staging
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: postgres-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: postgres-init
+          image: postgres:16-alpine
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              PGPASSWORD="$POSTGRES_PASSWORD" psql \
+                -h postgres \
+                -U "$POSTGRES_USER" \
+                -d "$POSTGRES_DB" \
+                -f /docker-entrypoint-initdb.d/init.sql
+          volumeMounts:
+            - name: postgres-init-sql
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+      volumes:
+        - name: postgres-init-sql
+          configMap:
+            name: postgres-init-sql
