@@ -104,7 +104,7 @@ kubectl apply -f k8s/base/frontend/
 kubectl get pods -n staging -o wide
 ```
 
-![Capture d’écran 2026-05-04 à 12.51.16.png](screens/part3/Capture%20d%E2%80%99e%CC%81cran%202026-05-04%20a%CC%80%2012.51.16.png)
+![front.png](screens/part3/front.png)
 
 Choix des replicas :
 
@@ -140,6 +140,5 @@ Observations :
 - Les Deployments doivent avoir le nombre de replicas attendu.
 - Le StatefulSet PostgreSQL doit afficher un Pod stable, generalement `postgres-0`.
 
-![Capture d’écran 2026-05-04 à 12.52.01.png](screens/part3/Capture%20d%E2%80%99e%CC%81cran%202026-05-04%20a%CC%80%2012.52.01.png)
-
-![Capture d’écran 2026-05-04 à 12.52.14.png](screens/part3/Capture%20d%E2%80%99e%CC%81cran%202026-05-04%20a%CC%80%2012.52.14.png)
+![logAll1.png](screens/part3/logAll1.png)
+![logAll2.png](screens/part3/logAll2.png)
