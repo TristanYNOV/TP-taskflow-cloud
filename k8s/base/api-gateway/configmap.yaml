@@ -1,12 +1,14 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: user-service-cm
+  name: api-gateway-cm
   namespace: staging
 data:
   NODE_ENV: "staging"
-  PORT: "3001"
+  PORT: "3000"
   LOG_LEVEL: "info"
-  DATABASE_URL: "postgresql://admin:admin@postgres:5432/taskflow"
   JWT_SECRET: "dev-secret"
+  USER_SERVICE_URL: "http://user-service:3001"
+  TASK_SERVICE_URL: "http://task-service:3002"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:3003"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"

@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: api-gateway
   namespace: staging
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: user-service
+      app: api-gateway
   template:
     metadata:
       labels:
-        app: user-service
+        app: api-gateway
     spec:
       containers:
-        - name: user-service
-          image: tristangottschalk/taskflow-user-service:latest
+        - name: api-gateway
+          image: tristangottschalk/taskflow-api-gateway:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
-                name: user-service-cm
+                name: api-gateway-cm
           ports:
             - name: http
-              containerPort: 3001
+              containerPort: 3000
           readinessProbe:
             httpGet:
               path: /health
@@ -45,4 +45,4 @@ spec:
               cpu: "100m"
             limits:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "300m"

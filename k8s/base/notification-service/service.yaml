@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: notification-service
   namespace: staging
 spec:
   type: ClusterIP
   selector:
-    app: user-service
+    app: notification-service
   ports:
     - name: http
-      port: 3001
+      port: 3003
       targetPort: http
