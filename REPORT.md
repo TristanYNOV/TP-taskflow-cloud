@@ -96,6 +96,12 @@ Objectifs couverts :
 - taux de requêtes, latence p50/p95/p99, taux d’erreurs
 - KPIs métier (création tâches, transitions statuts, répartition)
 
+![Grafana_Dashboards_list.png](screens/Part-1-StartMonitoring/Grafana_Dashboards_list.png)
+
+![Grafana_Dashboard_Business.png](screens/Part-1-StartMonitoring/Grafana_Dashboard_Business.png)
+
+![Grafana_Dashboard_Service.png](screens/Part-1-StartMonitoring/Grafana_Dashboard_Service.png)
+
 ---
 
 ## 3. Réponses théoriques structurées
@@ -190,6 +196,12 @@ Interprétation : validation de présence du span custom demandé.
 ```
 Interprétation : contrôle du flux de changement d’état.
 
+Exemple de résultat de recherche via Tempo :
+
+![Grafana_Tempo-TraceID_Details_span.png](screens/Part-1-StartMonitoring/Grafana_Tempo-TraceID_Details_span.png)
+
+![Grafana_Tempo_Search-Taskcreated.png](screens/Part-1-StartMonitoring/Grafana_Tempo_Search-Taskcreated.png)
+
 ---
 
 ## 5. Observations concrètes
@@ -212,6 +224,14 @@ Interprétation : contrôle du flux de changement d’état.
 
 - erreur visible côté Loki via `level="error"`
 - corrélation possible via `trace_id` pour remonter au span en erreur
+
+Exemple de recherche via Loki sous forme d'histogramme : 
+
+![Grafana_Loki_error.png](screens/Part-1-StartMonitoring/Grafana_Loki_error.png)
+
+Et sous forme de journal de log : 
+
+![Grafana_Loki_Error_AsLog.png](screens/Part-1-StartMonitoring/Grafana_Loki_Error_AsLog.png)
 
 ---
 
@@ -244,7 +264,7 @@ Interprétation : contrôle du flux de changement d’état.
 
 ---
 
-## 9. Captures d’écran à insérer (section explicite)
+## 9. Captures d’écran
 Tous les screens faits sont retrouvables dans le dossier /screens par section réalisée.
  Section actuelle: 
 - /Part-1-StartMonitoring
