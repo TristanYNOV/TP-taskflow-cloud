@@ -1,19 +1,22 @@
 image:
-  prefix: bruce1000/taskflow
-  pullPolicy: IfNotPresent
+  prefix: tristangottschalk/taskflow
+  pullPolicy: Always
 
 postgres:
-  user: taskflow
-  password: taskflow
+  user: admin
   db: taskflow
   storageSize: 1Gi
+
+secrets:
+  postgresPassword: ""
+  jwtSecret: ""
 
 otel:
   endpoint: http://otel-collector:4318
 
 userService:
   replicaCount: 2
-  tag: v1.0.1
+  tag: latest
   resources:
     requests:
       memory: "128Mi"
@@ -23,16 +26,48 @@ userService:
       cpu: "200m"
 
 frontend:
-# [...]
+  replicaCount: 2
+  tag: latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
 
 taskService:
-# [...]
+  replicaCount: 2
+  tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "300m"
 
 notificationService:
-# [...]
+  replicaCount: 2
+  tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
 
 apiGateway:
-# [...]
+  replicaCount: 2
+  tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "300m"
 
 redis:
   enabled: true

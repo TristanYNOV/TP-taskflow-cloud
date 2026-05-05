@@ -3,7 +3,6 @@ image:
   pullPolicy: Always
 
 postgres:
-  password: REMPLACER_PAR_MOT_DE_PASSE_FORT
   db: taskflow_prod
   storageSize: 10Gi
 
