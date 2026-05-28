@@ -1,0 +1,23 @@
+{{- $services := list "api-gateway" "task-service" "user-service" "notification-service" }}
+{{- range $index, $service := $services }}
+{{- if $index }}
+---
+{{- end }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $service }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - staging
+  selector:
+    matchLabels:
+      app: {{ $service }}
+  endpoints:
+    - port: http
+      path: /metrics
+{{- end }}

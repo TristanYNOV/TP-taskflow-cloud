@@ -1,0 +1,30 @@
+kube-prometheus-stack:
+  alertmanager:
+    alertmanagerSpec:
+      configSecret: taskflow-alertmanager-config
+
+  grafana:
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+    grafana.ini:
+      server:
+        root_url: "http://localhost:3100"
+        serve_from_sub_path: true
+
+  prometheus:
+    prometheusSpec:
+      retention: 7d
+      serviceMonitorNamespaceSelector: {}
+      serviceMonitorSelector:
+        matchLabels:
+          release: monitoring
+      resources:
+        requests:
+          memory: "512Mi"
+        limits:
+          memory: "1Gi"
+
+alertRules:
+  enabled: true
